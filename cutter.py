@@ -1,18 +1,49 @@
 from PIL import Image
-import torch
-from transformers import pipeline
+from rembg import new_session, remove
+from pathlib import Path
+from typing import Optional
+from abc import abstractmethod, ABC
+from functools import wraps
+import time
+from configs import factortimeinference
 
-def remove_background(picture_path, output_path):
-    pipe = pipeline(
-        "image-segmentation", 
-        model="briaai/RMBG-1.4", 
-        trust_remote_code=True,
-        device = torch.device ("mps") if torch.backends.mps.is_available() else "cpu"
-    )
+class FactorCutter(ABC):
+    def __init__(self):
+        pass
+    @abstractmethod
+    def remove_background(self, image: Image.Image, save_path: Optional[Path] = "output.png") -> Image.Image:
+        pass
 
-    image = Image.open(picture_path).convert("RGB")
 
-    final_image = pipe(image)
+class Cutter (FactorCutter):
+    def __init__(self, model_name: str = "u2net"):
+        providers = ["CUDAExecutionProvider", "MPSExecutionProvider", "CPUExecutionProvider"]
+        self.session = new_session(model_name=model_name, providers=providers)
 
-    final_image.save(output_path)
-    print(f"Фон в {picture_path} успешно удален!")
+    @factortimeinference
+    def remove_background(
+            self, 
+            image: Image.Image, 
+            save_path: Optional[Path] = None):
+
+        output_image = remove(image, session=self.session)
+
+        if save_path is not None:
+            output_image.save(save_path)
+
+        return output_image
+
+
+# Ярлык для U2net
+class U2netCutter(Cutter):
+    def __init__(self):
+        # Прокидываем название модели в конструктор BaseRembgCutter через super()
+        super().__init__(model_name="u2net")
+
+
+# Ярлык для BiRefNet
+class BirefNetCutter(Cutter):
+    def __init__(self):
+        # То же самое для birefnet
+        super().__init__(model_name="birefnet-general")
+

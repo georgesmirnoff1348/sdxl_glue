@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+import cv2, gc
 from PIL import Image
 from math import ceil
 from dataclasses import dataclass
@@ -10,6 +10,7 @@ class CompositionResult:
     mask: Image.Image
 
 class Composer:
+
     def __init__(self,
                  verbose: bool = True,
                  mask_inflate: int = 30,
@@ -207,8 +208,25 @@ class Composer:
             # Для режима "full" маска должна быть полностью белой (255) по всей области объекта
             full_mask = Image.new("L", background.size, 255)
 
-        # Важно: гарантируем, что маска возвращается в RGB, если этого требует пайплайн
         return CompositionResult(
             collage=collage, 
-            mask=full_mask.convert("RGB")
+            mask=full_mask
         )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.unload()
+
+    def unload(self) -> None:
+        "You need to free your memory because diffusors are too heavy"
+        print(
+            "--- СИСТЕМА ФАКТОР: НАЧАТО ИЗВЛЕЧЕНИЕ МОДЕЛИ ИЗ ОПЕРАТИВНОЙ ПАМЯТИ ---"
+        )
+        gc.collect()
+
+        print(
+            "--- СИСТЕМА ФАКТОР: ОПЕРАТИВНАЯ ПАМЯТЬ УСПЕШНО ОСВОБОЖДЕНА ---"
+        )
+    

@@ -1,6 +1,5 @@
-import numpy as np
 from configs import factortimeinference
-import random, cv2, gc, torch
+import random, gc, torch
 from diffusers import (AutoencoderKL, 
                         StableDiffusionXLInpaintPipeline, 
                         ControlNetModel,
@@ -23,7 +22,15 @@ class FactorInpainter(ABC):
         return self
 
     @abstractmethod
-    def inpaint_image(self,) -> Image.Image:
+    def inpaint_image(
+        self,
+        prompts: FactorPrompts,
+        config: FactorInferenceParameters,
+        composition: Optional[CompositionResult] = None,
+        background: Optional[Image.Image] = None,
+        figure: Optional[Image.Image] = None,
+        save_path: Optional[Path] = None,
+    ) -> Image.Image:
         pass
 
     def __exit__(self, exc_type, exc, tb):
@@ -33,8 +40,8 @@ class FactorInpainter(ABC):
         "You need to free your memory because diffusors are too heavy"
         print("--- СИСТЕМА ФАКТОР: НАЧАТО ИЗВЛЕЧЕНИЕ МОДЕЛИ ИЗ ОПЕРАТИВНОЙ ПАМЯТИ ---")
 
-        if hasattr(self, "pipeline"):
-            del self.pipeline
+        if hasattr(self, "pipe"):
+            del self.pipe
 
         gc.collect()
 
@@ -91,7 +98,7 @@ class FactorComposerInpainter(FactorInpainter):
         self.pipe.vae.disable_tiling()
 
     @factortimeinference
-    def inpaint(
+    def inpaint_image(
         self,
         prompts: FactorPrompts,
         config: FactorInferenceParameters,
@@ -129,6 +136,10 @@ class FactorComposerInpainter(FactorInpainter):
             torch.mps.empty_cache()
 
         print(f"[Inpainter] Генерация (Steps: {config_dict['num_inference_steps']}, Strength: {config_dict['strength']})...")
+
+        # The composition dimensions are authoritative for this pipeline call.
+        config_dict.pop("height", None)
+        config_dict.pop("width", None)
         
         with torch.inference_mode():
             image_out = self.pipe(

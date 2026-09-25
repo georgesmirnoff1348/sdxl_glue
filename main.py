@@ -35,13 +35,13 @@ def main() -> None:
 
     cutter = BirefNetCutter()
     cutter.remove_background(
-        image=Image.open("comrade_6.png"),
-        save_path=Path("sporous.png"),
+        image=Image.open("portrait_source.png"),
+        save_path=Path("portrait_cutout.png"),
     )
 
     composition = Composer(verbose=False).compose(
         background=Image.open("factory.png"),
-        figure=Image.open("sporous.png"),
+        figure=Image.open("portrait_cutout.png"),
         scale=1,
     )
 
@@ -72,11 +72,11 @@ def main() -> None:
         metadata = {
             "inputs": {
                 "background": "factory.png",
-                "foreground_source": "comrade_6.png",
-                "cutout": "sporous.png",
+                "foreground_source": "portrait_source.png",
+                "cutout": "portrait_cutout.png",
             },
             "outputs": {
-                "cutout": "sporous.png",
+                "cutout": "portrait_cutout.png",
                 "inpainted_image": "outCNet.png",
                 "metadata": "outCNet.metadata.json",
             },

@@ -1,5 +1,5 @@
 import numpy as np
-import cv2, gc
+import cv2
 from PIL import Image
 from math import ceil
 from dataclasses import dataclass
@@ -212,21 +212,3 @@ class Composer:
             collage=collage, 
             mask=full_mask
         )
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        self.unload()
-
-    def unload(self) -> None:
-        "You need to free your memory because diffusors are too heavy"
-        print(
-            "--- СИСТЕМА ФАКТОР: НАЧАТО ИЗВЛЕЧЕНИЕ МОДЕЛИ ИЗ ОПЕРАТИВНОЙ ПАМЯТИ ---"
-        )
-        gc.collect()
-
-        print(
-            "--- СИСТЕМА ФАКТОР: ОПЕРАТИВНАЯ ПАМЯТЬ УСПЕШНО ОСВОБОЖДЕНА ---"
-        )
-    
